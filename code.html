@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML Code Editor</title>
+    
+    <!-- Bootstrap CSS - Add CDN link or local file -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    
+    <style>
+        /* Custom styles */
+        .code-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            width: 100%;
+            max-width: 600px;
+            margin: auto;
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+            margin-top: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            margin-bottom: 10px;
+            font-family: monospace;
+            font-size: 14px;
+            resize: none;
+        }
+        button {
+            margin-right: 10px;
+        }
+        iframe {
+            width: 100%;
+            margin-bottom: 10px;
+            height: 200px;
+            border: 1px solid #ddd;
+            display: none; /* Initially hide the iframe */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="d-flex justify-content-center align-items-center w-100">
+            <input type="text" id="nameInput" class="form-control mb-3 mt-3" placeholder="Enter name" style="width: 200px;">
+        </div>
+        <div id="container">
+            <div class="code-container">
+                <textarea class="code form-control mb-3">
+<span class="nameSpan"></span>
+                </textarea>
+                <iframe class="output"></iframe>
+                <div>
+                    <button class="edit btn btn-primary">Submit</button>
+                    <button class="copy btn btn-success" style="display: none;">Copy Text</button>
+                    <p class="success"></p>
+                </div>
+            </div>
+        </div>
+        <div class="d-flex justify-content-center align-items-center w-100">
+            <button id="addBtn" class="btn btn-info mt-3">Add</button>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS (optional) - if you need Bootstrap JavaScript functionality -->
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    <script>
+        const container = document.getElementById('container');
+        const addBtn = document.getElementById('addBtn');
+        const nameInput = document.getElementById('nameInput');
+
+        // Event listener for the Add button
+        addBtn.addEventListener('click', () => {
+            // Clone the code-container
+            const originalContainer = document.querySelector('.code-container');
+            const newContainer = originalContainer.cloneNode(true);
+
+            // Clear textarea content
+            const textAreas = newContainer.querySelectorAll('.code');
+            textAreas.forEach(textArea => {
+                textArea.value = '';
+            });
+
+            // Reset iframe display
+            const iframes = newContainer.querySelectorAll('.output');
+            iframes.forEach(iframe => {
+                iframe.style.display = 'none';
+            });
+
+            // Reset copy button display
+            const copyButtons = newContainer.querySelectorAll('.copy');
+            copyButtons.forEach(copyButton => {
+                copyButton.style.display = 'none';
+            });
+
+            // Reset success message
+            const successMessages = newContainer.querySelectorAll('.success');
+            successMessages.forEach(successMessage => {
+                successMessage.textContent = '';
+                successMessage.style.display = 'none';
+            });
+
+            // Append the new container to the main container
+            container.appendChild(newContainer);
+        });
+
+        container.addEventListener('click', (event) => {
+            const target = event.target;
+
+            // Handle edit and copy buttons
+            if (target.classList.contains('edit')) {
+                toggleEdit(target);
+            } else if (target.classList.contains('copy')) {
+                copyContent(target);
+            }
+        });
+
+        function toggleEdit(button) {
+            const container = button.closest('.code-container');
+            const textarea = container.querySelector('.code');
+            const iframe = container.querySelector('.output');
+            const copyButton = container.querySelector('.copy');
+            const isEditing = (textarea.style.display !== 'none');
+
+            if (isEditing) {
+                // Show iframe and hide textarea
+                const code = textarea.value.replace('<span class="nameSpan"></span>', nameInput.value);
+                const outputDoc = iframe.contentDocument || iframe.contentWindow.document;
+                outputDoc.open();
+                outputDoc.write(code);
+                outputDoc.close();
+
+                textarea.style.display = 'none';
+                iframe.style.display = 'block';
+                button.textContent = 'Edit';
+                copyButton.style.display = 'inline-block'; // Show the copy button
+            } else {
+                // Show textarea and hide iframe
+                textarea.style.display = 'block';
+                iframe.style.display = 'none';
+                button.textContent = 'Submit';
+                copyButton.style.display = 'none'; // Hide the copy button
+            }
+        }
+
+        async function copyContent(button) {
+            const container = button.closest('.code-container');
+            const iframe = container.querySelector('.output');
+            const successMessage = container.querySelector('.success');
+
+            try {
+                const outputDoc = iframe.contentDocument || iframe.contentWindow.document;
+                const textContent = outputDoc.body.textContent || outputDoc.body.innerText; // Get text content without tags
+                await navigator.clipboard.writeText(textContent.trim()); // Trim any leading or trailing whitespace
+                showSuccessMessage(successMessage, 'Content copied');
+            } catch (err) {
+                alert('Failed to copy text content: ' + err);
+            }
+        }
+
+        function showSuccessMessage(successMessage, message) {
+            successMessage.textContent = message;
+            successMessage.style.display = 'block';
+            setTimeout(() => {
+                successMessage.style.display = 'none';
+            }, 2000); // Hide message after 2 seconds
+        }
+
+        // Update name in code when input changes
+        nameInput.addEventListener('input', () => {
+            const nameSpan = document.querySelectorAll('.nameSpan');
+            nameSpan.forEach(span => {
+                span.textContent = nameInput.value;
+            });
+            updateIframes();
+        });
+
+        function updateIframes() {
+            const iframes = document.querySelectorAll('.output');
+            iframes.forEach(iframe => {
+                const container = iframe.closest('.code-container');
+                const textarea = container.querySelector('.code');
+                const code = textarea.value.replace('<span class="nameSpan"></span>', nameInput.value);
+                const outputDoc = iframe.contentDocument || iframe.contentWindow.document;
+                outputDoc.open();
+                outputDoc.write(code);
+                outputDoc.close();
+            });
+        }
+    </script>
+</body>
+</html>
